@@ -116,6 +116,16 @@
         </label>
 
         <label>
+          <span>CodCDC</span>
+          <select [ngModel]="facade.filters().codCDC" (ngModelChange)="facade.setFilter('codCDC', $event)">
+            <option value="tutte">Tutti</option>
+            @for (item of facade.codCDCOptions(); track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
           <span>Linea prodotto</span>
           <select [ngModel]="facade.filters().lineaProd" (ngModelChange)="facade.setFilter('lineaProd', $event)">
             <option value="tutte">Tutte</option>

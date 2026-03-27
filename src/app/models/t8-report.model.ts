@@ -74,6 +74,7 @@ export interface DashboardFilters {
   scope: PortfolioScope;
   closure: ClosureFilter;
   search: string;
+  codCDC: string;
   lineaProd: string;
   businessUnit: string;
   accountManager: string;

@@ -6,6 +6,7 @@ const DEFAULT_FILTERS: DashboardFilters = {
   scope: 'commerciale',
   closure: 'tutte',
   search: '',
+  codCDC: 'tutte',
   lineaProd: 'tutte',
   businessUnit: 'tutte',
   accountManager: 'tutte',
@@ -43,6 +44,7 @@ export class T8ViewerFacade {
   );
 
   readonly lineaProdOptions = computed(() => this.uniqueValues(this.records().map((record) => record.lineaProd)));
+  readonly codCDCOptions = computed(() => this.uniqueValues(this.records().map((record) => record.codCDC)));
   readonly businessUnitOptions = computed(() => this.uniqueValues(this.records().map((record) => record.businessUnit)));
   readonly accountManagerOptions = computed(() => this.uniqueValues(this.records().map((record) => record.accountManagerLabel)));
   readonly projectManagerOptions = computed(() => this.uniqueValues(this.records().map((record) => record.projectManager)));
@@ -56,6 +58,7 @@ export class T8ViewerFacade {
     return this.records()
       .filter((record) => (filters.scope === 'commerciale' ? record.isCommercial : true))
       .filter((record) => closureMatches(record))
+      .filter((record) => (filters.codCDC === 'tutte' ? true : record.codCDC === filters.codCDC))
       .filter((record) => (filters.lineaProd === 'tutte' ? true : record.lineaProd === filters.lineaProd))
       .filter((record) => (filters.businessUnit === 'tutte' ? true : record.businessUnit === filters.businessUnit))
       .filter((record) => (filters.accountManager === 'tutte' ? true : record.accountManagerLabel === filters.accountManager))
