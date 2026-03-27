@@ -1,0 +1,501 @@
+<input #fileInput type="file" accept=".xls,.xlsx" hidden (change)="onFileSelected($event)" />
+
+@if (facade.status() === 'idle' || facade.status() === 'loading' || facade.status() === 'error') {
+  <section
+    class="upload-shell"
+    [class.dragging]="isDragging()"
+    (dragenter)="setDragging(true)"
+    (dragover)="$event.preventDefault(); setDragging(true)"
+    (dragleave)="setDragging(false)"
+    (drop)="onDrop($event)"
+  >
+    <div class="upload-card">
+      <p class="eyebrow">T8 Client-side Viewer</p>
+      <h1>Carica il report T8 e genera subito la dashboard executive.</h1>
+      <p class="lead">
+        Nessun backend, nessun upload esterno: il file viene letto e aggregato interamente nel browser.
+      </p>
+
+      <div class="upload-actions">
+        <button class="primary-action" type="button" (click)="openPicker()">
+          @if (facade.status() === 'loading') {
+            Parsing in corso...
+          } @else {
+            Seleziona file Excel
+          }
+        </button>
+        <p class="upload-note">Formato atteso: report T8 aggregato uguale al campione legacy `.xls`.</p>
+      </div>
+
+      @if (facade.status() === 'error') {
+        <div class="status-card status-card--error">
+          <strong>File non valido</strong>
+          <p>{{ facade.errorMessage() }}</p>
+        </div>
+      } @else if (facade.status() === 'loading') {
+        <div class="status-card">
+          <strong>Elaborazione in corso</strong>
+          <p>Sto leggendo metadata, righe commessa e indicatori economici del workbook.</p>
+        </div>
+      }
+
+      <div class="feature-grid">
+        <article class="feature-card">
+          <h2>Perimetro di default</h2>
+          <p>Vista iniziale commerciale, con toggle immediato per includere tutte le commesse.</p>
+        </article>
+        <article class="feature-card">
+          <h2>KPI C-level</h2>
+          <p>Valore contratti, ricavi, costi, margine, backlog e conteggio commesse a rischio.</p>
+        </article>
+        <article class="feature-card">
+          <h2>Drilldown operativo</h2>
+          <p>Ranking, filtri, lista analitica e pannello di dettaglio per ogni commessa.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+} @else {
+  <section class="dashboard-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Executive Snapshot</p>
+        <h1>{{ facade.meta()?.title }}</h1>
+        <p class="lead">
+          {{ facade.fileName() }} · Eseguito {{ facade.meta()?.executedAtLabel || 'N.D.' }} ·
+          {{ facade.filteredRecords().length }} commesse nel perimetro attuale
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <button type="button" class="secondary-action" (click)="facade.reset()">Carica un altro file</button>
+      </div>
+    </header>
+
+    <div class="meta-strip">
+      @for (item of facade.meta()?.referenceItems ?? []; track item.label) {
+        <div class="meta-pill">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      }
+    </div>
+
+    <section class="filters-card">
+      <div class="scope-switch">
+        <button
+          type="button"
+          [class.active]="facade.filters().scope === 'commerciale'"
+          (click)="facade.setScope('commerciale')"
+        >
+          Commerciale
+        </button>
+        <button type="button" [class.active]="facade.filters().scope === 'tutte'" (click)="facade.setScope('tutte')">
+          Tutte le commesse
+        </button>
+      </div>
+
+      <div class="filter-grid">
+        <label>
+          <span>Ricerca</span>
+          <input
+            type="search"
+            [ngModel]="facade.filters().search"
+            (ngModelChange)="onSearchChange($event)"
+            placeholder="Codice, descrizione, cliente"
+          />
+        </label>
+
+        <label>
+          <span>Stato</span>
+          <select [ngModel]="facade.filters().closure" (ngModelChange)="facade.setClosure($event)">
+            <option value="tutte">Tutte</option>
+            <option value="aperte">Aperte</option>
+            <option value="chiuse">Chiuse</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Linea prodotto</span>
+          <select [ngModel]="facade.filters().lineaProd" (ngModelChange)="facade.setFilter('lineaProd', $event)">
+            <option value="tutte">Tutte</option>
+            @for (item of facade.lineaProdOptions(); track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Business Unit</span>
+          <select [ngModel]="facade.filters().businessUnit" (ngModelChange)="facade.setFilter('businessUnit', $event)">
+            <option value="tutte">Tutte</option>
+            @for (item of facade.businessUnitOptions(); track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Account Manager</span>
+          <select [ngModel]="facade.filters().accountManager" (ngModelChange)="facade.setFilter('accountManager', $event)">
+            <option value="tutte">Tutti</option>
+            @for (item of facade.accountManagerOptions(); track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Project Manager</span>
+          <select [ngModel]="facade.filters().projectManager" (ngModelChange)="facade.setFilter('projectManager', $event)">
+            <option value="tutte">Tutti</option>
+            @for (item of facade.projectManagerOptions(); track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Tipo avanzamento</span>
+          <select [ngModel]="facade.filters().tipoAvanz" (ngModelChange)="facade.setFilter('tipoAvanz', $event)">
+            <option value="tutte">Tutti</option>
+            @for (item of facade.tipoAvanzOptions(); track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Valore contratti</span>
+        <strong>{{ formatCompactMoney(facade.kpis().contractsValue) }}</strong>
+      </article>
+      <article class="kpi-card">
+        <span>Ricavi alla data</span>
+        <strong>{{ formatCompactMoney(facade.kpis().revenueToDate) }}</strong>
+      </article>
+      <article class="kpi-card">
+        <span>Costi alla data</span>
+        <strong>{{ formatCompactMoney(facade.kpis().costToDate) }}</strong>
+      </article>
+      <article class="kpi-card" [class.negative]="facade.kpis().marginToDate < 0">
+        <span>Margine alla data</span>
+        <strong>{{ formatCompactMoney(facade.kpis().marginToDate) }}</strong>
+      </article>
+      <article class="kpi-card" [class.negative]="(facade.kpis().marginPct ?? 0) < 0">
+        <span>Margine %</span>
+        <strong>{{ formatPercent(facade.kpis().marginPct) }}</strong>
+      </article>
+      <article class="kpi-card">
+        <span>Backlog anno corrente</span>
+        <strong>{{ formatCompactMoney(facade.kpis().backlogCurrentYear) }}</strong>
+        <small>{{ facade.kpis().atRiskCount }} commesse a rischio</small>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Best performer</p>
+            <h2>Margine alla data</h2>
+          </div>
+        </div>
+        <div class="ranking-list">
+          @for (item of facade.bestPerformers(); track item.record.codComm) {
+            <button type="button" class="ranking-item" (click)="selectRecord(item.record)">
+              <div class="ranking-copy">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.record.descriz }}</span>
+              </div>
+              <div class="ranking-bar">
+                <span class="fill positive" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.bestPerformers()))"></span>
+              </div>
+              <strong class="ranking-value">{{ formatMoney(item.value) }}</strong>
+            </button>
+          }
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Worst performer</p>
+            <h2>Margine alla data</h2>
+          </div>
+        </div>
+        <div class="ranking-list">
+          @for (item of facade.worstPerformers(); track item.record.codComm) {
+            <button type="button" class="ranking-item" (click)="selectRecord(item.record)">
+              <div class="ranking-copy">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.record.descriz }}</span>
+              </div>
+              <div class="ranking-bar">
+                <span class="fill negative" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.worstPerformers()))"></span>
+              </div>
+              <strong class="ranking-value">{{ formatMoney(item.value) }}</strong>
+            </button>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Efficienza</p>
+            <h2>Margine percentuale</h2>
+          </div>
+        </div>
+        <div class="ranking-list">
+          @for (item of facade.bestMarginPct(); track item.record.codComm) {
+            <button type="button" class="ranking-item" (click)="selectRecord(item.record)">
+              <div class="ranking-copy">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.sublabel }}</span>
+              </div>
+              <div class="ranking-bar">
+                <span class="fill positive" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.bestMarginPct()))"></span>
+              </div>
+              <strong class="ranking-value">{{ formatPercent(item.value) }}</strong>
+            </button>
+          }
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Rischio</p>
+            <h2>Margine percentuale peggiore</h2>
+          </div>
+        </div>
+        <div class="ranking-list">
+          @for (item of facade.worstMarginPct(); track item.record.codComm) {
+            <button type="button" class="ranking-item" (click)="selectRecord(item.record)">
+              <div class="ranking-copy">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.sublabel }}</span>
+              </div>
+              <div class="ranking-bar">
+                <span class="fill negative" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.worstMarginPct()))"></span>
+              </div>
+              <strong class="ranking-value">{{ formatPercent(item.value) }}</strong>
+            </button>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Backlog</p>
+            <h2>Commesse con maggiore ricavo residuo</h2>
+          </div>
+        </div>
+        <div class="ranking-list">
+          @for (item of facade.backlogLeaders(); track item.record.codComm) {
+            <button type="button" class="ranking-item" (click)="selectRecord(item.record)">
+              <div class="ranking-copy">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.record.descriz }}</span>
+              </div>
+              <div class="ranking-bar">
+                <span class="fill accent" [style.width]="formatBarWidth(item.record.backlogCurrentYear, maxAbsoluteValue(facade.backlogLeaders()))"></span>
+              </div>
+              <strong class="ranking-value">{{ formatMoney(item.record.backlogCurrentYear) }}</strong>
+            </button>
+          }
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Attenzione</p>
+            <h2>Commesse da monitorare</h2>
+          </div>
+        </div>
+        <div class="risk-list">
+          @for (record of facade.atRiskRecords(); track record.codComm) {
+            <button type="button" class="risk-item" (click)="selectRecord(record)">
+              <div>
+                <strong>{{ record.codComm }}</strong>
+                <p>{{ record.descriz }}</p>
+              </div>
+              <div class="risk-metrics">
+                <span [class.negative]="record.marginToDate < 0">{{ formatMoney(record.marginToDate) }}</span>
+                <span>{{ formatPercent(record.marginPctToDate) }}</span>
+                <span>{{ formatMoney(record.backlogCurrentYear) }}</span>
+              </div>
+            </button>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Mix di portafoglio</p>
+            <h2>Business Unit</h2>
+          </div>
+        </div>
+        <div class="breakdown-list">
+          @for (item of facade.businessUnitBreakdown(); track item.label) {
+            <div class="breakdown-item">
+              <div class="breakdown-copy">
+                <strong>{{ item.label || 'Non valorizzata' }}</strong>
+                <span>{{ item.count }} commesse · margine {{ formatCompactMoney(item.margin) }}</span>
+              </div>
+              <div class="breakdown-track">
+                <span class="breakdown-fill" [style.width]="formatBarWidth(item.revenue, maxRevenue(facade.businessUnitBreakdown()))"></span>
+              </div>
+              <strong>{{ formatCompactMoney(item.revenue) }}</strong>
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Mix di portafoglio</p>
+            <h2>Linea prodotto</h2>
+          </div>
+        </div>
+        <div class="breakdown-list">
+          @for (item of facade.lineaProdBreakdown(); track item.label) {
+            <div class="breakdown-item">
+              <div class="breakdown-copy">
+                <strong>{{ item.label || 'Non valorizzata' }}</strong>
+                <span>{{ item.count }} commesse · margine {{ formatCompactMoney(item.margin) }}</span>
+              </div>
+              <div class="breakdown-track">
+                <span class="breakdown-fill accent" [style.width]="formatBarWidth(item.revenue, maxRevenue(facade.lineaProdBreakdown()))"></span>
+              </div>
+              <strong>{{ formatCompactMoney(item.revenue) }}</strong>
+            </div>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Dettaglio analitico</p>
+          <h2>Commesse filtrate</h2>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><button type="button" (click)="facade.toggleSort('codComm')">Commessa {{ sortIndicator('codComm') }}</button></th>
+              <th><button type="button" (click)="facade.toggleSort('cliente')">Cliente {{ sortIndicator('cliente') }}</button></th>
+              <th><button type="button" (click)="facade.toggleSort('businessUnit')">BU {{ sortIndicator('businessUnit') }}</button></th>
+              <th><button type="button" (click)="facade.toggleSort('revenueToDate')">Ricavi {{ sortIndicator('revenueToDate') }}</button></th>
+              <th><button type="button" (click)="facade.toggleSort('costToDate')">Costi {{ sortIndicator('costToDate') }}</button></th>
+              <th><button type="button" (click)="facade.toggleSort('marginToDate')">Margine {{ sortIndicator('marginToDate') }}</button></th>
+              <th><button type="button" (click)="facade.toggleSort('marginPctToDate')">Margine % {{ sortIndicator('marginPctToDate') }}</button></th>
+              <th><button type="button" (click)="facade.toggleSort('backlogCurrentYear')">Backlog {{ sortIndicator('backlogCurrentYear') }}</button></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of facade.filteredRecords(); track record.codComm) {
+              <tr (click)="selectRecord(record)" [class.selected]="detailRecord()?.codComm === record.codComm">
+                <td>
+                  <strong>{{ record.codComm }}</strong>
+                  <small>{{ record.descriz }}</small>
+                </td>
+                <td>{{ record.cliente }}</td>
+                <td>{{ record.businessUnit || '-' }}</td>
+                <td>{{ formatMoney(record.revenueToDate) }}</td>
+                <td>{{ formatMoney(record.costToDate) }}</td>
+                <td [class.negative]="record.marginToDate < 0">{{ formatMoney(record.marginToDate) }}</td>
+                <td [class.negative]="(record.marginPctToDate ?? 0) < 0">{{ formatPercent(record.marginPctToDate) }}</td>
+                <td>{{ formatMoney(record.backlogCurrentYear) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    @if (detailRecord(); as record) {
+      <aside class="detail-drawer">
+        <div class="detail-header">
+          <div>
+            <p class="panel-label">Commessa selezionata</p>
+            <h2>{{ record.codComm }}</h2>
+            <p>{{ record.descriz }}</p>
+          </div>
+          <button type="button" class="ghost" (click)="facade.clearSelection()">Chiudi</button>
+        </div>
+
+        <div class="detail-grid">
+          <article>
+            <span>Cliente</span>
+            <strong>{{ record.cliente }}</strong>
+          </article>
+          <article>
+            <span>Business Unit</span>
+            <strong>{{ record.businessUnit || 'N.D.' }}</strong>
+          </article>
+          <article>
+            <span>Account Manager</span>
+            <strong>{{ record.accountManagerLabel }}</strong>
+          </article>
+          <article>
+            <span>Project Manager</span>
+            <strong>{{ record.projectManager || 'N.D.' }}</strong>
+          </article>
+          <article>
+            <span>Contratto</span>
+            <strong>{{ record.contratto || 'N.D.' }}</strong>
+          </article>
+          <article>
+            <span>Data fine progetto</span>
+            <strong>{{ formatDate(record.projectEndDate) }}</strong>
+          </article>
+        </div>
+
+        <div class="detail-metrics">
+          <div>
+            <span>Ricavi alla data</span>
+            <strong>{{ formatMoney(record.revenueToDate) }}</strong>
+          </div>
+          <div>
+            <span>Costi alla data</span>
+            <strong>{{ formatMoney(record.costToDate) }}</strong>
+          </div>
+          <div>
+            <span>Margine alla data</span>
+            <strong [class.negative]="record.marginToDate < 0">{{ formatMoney(record.marginToDate) }}</strong>
+          </div>
+          <div>
+            <span>Margine %</span>
+            <strong [class.negative]="(record.marginPctToDate ?? 0) < 0">{{ formatPercent(record.marginPctToDate) }}</strong>
+          </div>
+          <div>
+            <span>Backlog anno corrente</span>
+            <strong>{{ formatMoney(record.backlogCurrentYear) }}</strong>
+          </div>
+          <div>
+            <span>Costi residui anno corrente</span>
+            <strong>{{ formatMoney(record.residualCostCurrentYear) }}</strong>
+          </div>
+        </div>
+      </aside>
+    }
+  </section>
+}
