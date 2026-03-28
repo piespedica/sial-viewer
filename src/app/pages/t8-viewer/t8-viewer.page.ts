@@ -1,40 +1,42 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { KpiCard, PersistedViewerSession, RankingEntry, SegmentBreakdown, T8JobRecord, ViewerTab } from '../../models/t8-report.model';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { PersistedViewerSession, SessionDialogMode, T8JobRecord, ViewerTab } from '../../models/t8-report.model';
 import { T8ViewerFacade } from '../../services/t8-viewer.facade';
-
-type SessionDialogMode = 'restore-choice' | 'restore-picker' | 'save-session' | null;
+import { T8ViewerDetailModalComponent } from './components/t8-viewer-detail-modal/t8-viewer-detail-modal.component';
+import { T8ViewerGlossaryTabComponent } from './components/t8-viewer-glossary-tab/t8-viewer-glossary-tab.component';
+import { T8ViewerOverviewTabComponent } from './components/t8-viewer-overview-tab/t8-viewer-overview-tab.component';
+import { T8ViewerPerformanceTabComponent } from './components/t8-viewer-performance-tab/t8-viewer-performance-tab.component';
+import { T8ViewerPortfolioTabComponent } from './components/t8-viewer-portfolio-tab/t8-viewer-portfolio-tab.component';
+import { T8ViewerSessionDialogComponent } from './components/t8-viewer-session-dialog/t8-viewer-session-dialog.component';
+import { T8ViewerToolbarComponent } from './components/t8-viewer-toolbar/t8-viewer-toolbar.component';
+import { T8ViewerUploadShellComponent } from './components/t8-viewer-upload-shell/t8-viewer-upload-shell.component';
+import { T8ViewerWorkspaceHeaderComponent } from './components/t8-viewer-workspace-header/t8-viewer-workspace-header.component';
 
 @Component({
   selector: 'app-t8-viewer-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    T8ViewerDetailModalComponent,
+    T8ViewerGlossaryTabComponent,
+    T8ViewerOverviewTabComponent,
+    T8ViewerPerformanceTabComponent,
+    T8ViewerPortfolioTabComponent,
+    T8ViewerSessionDialogComponent,
+    T8ViewerToolbarComponent,
+    T8ViewerUploadShellComponent,
+    T8ViewerWorkspaceHeaderComponent,
+  ],
   templateUrl: './t8-viewer.page.html',
   styleUrl: './t8-viewer.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class T8ViewerPageComponent implements OnInit {
-  private readonly currencyFormatter = new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR',
-    maximumFractionDigits: 0,
-  });
-
-  private readonly compactCurrencyFormatter = new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  });
-
   readonly facade = inject(T8ViewerFacade);
   readonly isDragging = signal(false);
-  readonly openTooltipId = signal<string | null>(null);
   readonly isDetailModalOpen = signal(false);
   readonly modalRecord = signal<T8JobRecord | null>(null);
-  readonly detailRecord = computed(() => this.facade.selectedRecord() ?? this.facade.selectedRecordFallback());
-  readonly sessionDialogMode = signal<SessionDialogMode>(null);
+  readonly sessionDialogMode = signal<SessionDialogMode | null>(null);
   readonly savedSessions = signal<PersistedViewerSession[]>([]);
   readonly selectedSessionId = signal<string | null>(null);
   readonly pendingSessionName = signal('');
@@ -64,14 +66,8 @@ export class T8ViewerPageComponent implements OnInit {
     input.value = '';
   }
 
-  onDrop(event: DragEvent): void {
-    event.preventDefault();
+  onDropFile(file: File): void {
     this.isDragging.set(false);
-    const file = event.dataTransfer?.files?.[0];
-    if (!file) {
-      return;
-    }
-
     this.closeDetailModal();
     void this.handleLoadedFile(file);
   }
@@ -84,95 +80,8 @@ export class T8ViewerPageComponent implements OnInit {
     this.isDragging.set(value);
   }
 
-  onSearchChange(value: string): void {
-    this.facade.setSearch(value);
-  }
-
-  formatMoney(value: number): string {
-    return this.currencyFormatter.format(value);
-  }
-
-  formatCompactMoney(value: number): string {
-    return this.compactCurrencyFormatter.format(value);
-  }
-
-  formatPercent(value: number | null | undefined): string {
-    if (value === null || value === undefined || Number.isNaN(value)) {
-      return 'N.D.';
-    }
-
-    return `${value.toFixed(1)}%`;
-  }
-
-  formatDate(value: Date | null): string {
-    if (!value) {
-      return 'N.D.';
-    }
-
-    return new Intl.DateTimeFormat('it-IT', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }).format(value);
-  }
-
-  formatKpiValue(card: KpiCard): string {
-    if (card.value === null || card.value === undefined) {
-      return 'N.D.';
-    }
-
-    if (card.format === 'currency') {
-      return this.formatCompactMoney(card.value);
-    }
-
-    if (card.format === 'percent') {
-      return this.formatPercent(card.value);
-    }
-
-    return Math.round(card.value).toString();
-  }
-
-  formatBarWidth(value: number, max: number): string {
-    if (max <= 0) {
-      return '0%';
-    }
-
-    return `${Math.max(8, (Math.abs(value) / max) * 100)}%`;
-  }
-
-  maxRevenue(items: SegmentBreakdown[]): number {
-    return Math.max(...items.map((item) => item.revenue), 0);
-  }
-
-  maxAbsoluteValue(items: RankingEntry[]): number {
-    return Math.max(...items.map((item) => Math.abs(item.value)), 0);
-  }
-
-  sortIndicator(sortKey: Parameters<T8ViewerFacade['toggleSort']>[0]): string {
-    const filters = this.facade.filters();
-    if (filters.sortKey !== sortKey) {
-      return '';
-    }
-
-    return filters.sortDirection === 'desc' ? 'v' : '^';
-  }
-
   setTab(tab: ViewerTab): void {
     this.facade.setActiveTab(tab);
-  }
-
-  showTooltip(id: string): void {
-    this.openTooltipId.set(id);
-  }
-
-  hideTooltip(id: string): void {
-    if (this.openTooltipId() === id) {
-      this.openTooltipId.set(null);
-    }
-  }
-
-  toggleTooltip(id: string): void {
-    this.openTooltipId.set(this.openTooltipId() === id ? null : id);
   }
 
   openRecordModal(record: T8JobRecord): void {
@@ -180,8 +89,7 @@ export class T8ViewerPageComponent implements OnInit {
     this.isDetailModalOpen.set(true);
   }
 
-  selectDetailRecord(event: MouseEvent, record: T8JobRecord): void {
-    event.preventDefault();
+  selectDetailRecord(record: T8JobRecord): void {
     this.facade.selectRecord(record);
   }
 
@@ -286,13 +194,6 @@ export class T8ViewerPageComponent implements OnInit {
   closeSessionDialog(): void {
     this.sessionDialogMode.set(null);
     this.sessionDialogError.set(null);
-  }
-
-  formatSavedAt(value: string): string {
-    return new Intl.DateTimeFormat('it-IT', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }).format(new Date(value));
   }
 
   private refreshSavedSessions(): void {

@@ -1,0 +1,98 @@
+<section class="tab-layout">
+  <div class="content-grid content-grid--wide-right">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Glossario KPI</p>
+          <h2>Come leggere il T8</h2>
+        </div>
+      </div>
+      <div class="glossary-list">
+        @for (card of facade.glossaryCards(); track card.id) {
+          <article class="glossary-card">
+            <div class="glossary-head">
+              <strong>{{ card.label }}</strong>
+              <span>{{ formatKpiValue(card) }}</span>
+            </div>
+            <p>{{ card.definition }}</p>
+            <p><strong>Formula:</strong> {{ card.formula }}</p>
+          </article>
+        }
+      </div>
+    </article>
+
+    <article class="panel detail-panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Dettaglio commessa</p>
+          <h2>{{ detailRecord()?.codComm || 'Seleziona una commessa' }}</h2>
+        </div>
+        <p>Tasto destro su una commessa per fissarla in questo pannello.</p>
+      </div>
+
+      @if (detailRecord(); as record) {
+        <div class="detail-grid">
+          <article>
+            <span>Cliente</span>
+            <strong>{{ record.cliente }}</strong>
+          </article>
+          <article>
+            <span>Business Unit</span>
+            <strong>{{ record.businessUnit || 'N.D.' }}</strong>
+          </article>
+          <article>
+            <span>CodCDC</span>
+            <strong>{{ record.codCDC }}</strong>
+          </article>
+          <article>
+            <span>Account Manager</span>
+            <strong>{{ record.accountManagerLabel }}</strong>
+          </article>
+          <article>
+            <span>Project Manager</span>
+            <strong>{{ record.projectManager || 'N.D.' }}</strong>
+          </article>
+          <article>
+            <span>Data fine progetto</span>
+            <strong>{{ formatDate(record.projectEndDate) }}</strong>
+          </article>
+        </div>
+
+        <div class="detail-metrics">
+          <div>
+            <span>Margine C12</span>
+            <strong>{{ formatMoney(record.plannedMargin) }}</strong>
+          </div>
+          <div>
+            <span>Margine totale commessa</span>
+            <strong [class.negative]="record.totalMargin < 0">{{ formatMoney(record.totalMargin) }}</strong>
+          </div>
+          <div>
+            <span>Margine attuale</span>
+            <strong [class.negative]="record.marginToDate < 0">{{ formatMoney(record.marginToDate) }}</strong>
+          </div>
+          <div>
+            <span>Delta vs C12</span>
+            <strong [class.negative]="record.marginDeltaVsPlan < 0">{{ formatMoney(record.marginDeltaVsPlan) }}</strong>
+          </div>
+          <div>
+            <span>Margine %</span>
+            <strong [class.negative]="(record.marginPctToDate ?? 0) < 0">{{ formatPercent(record.marginPctToDate) }}</strong>
+          </div>
+          <div>
+            <span>Backlog anno corrente</span>
+            <strong>{{ formatMoney(record.backlogCurrentYear) }}</strong>
+          </div>
+          <div>
+            <span>Margine del mese</span>
+            <strong [class.negative]="record.monthlyMargin < 0">{{ formatMoney(record.monthlyMargin) }}</strong>
+          </div>
+        </div>
+      } @else {
+        <p class="empty-detail">
+          Usa il tasto destro su una commessa negli altri tab per vederla qui in dettaglio.
+        </p>
+      }
+    </article>
+  </div>
+</section>

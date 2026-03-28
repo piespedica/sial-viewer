@@ -1,0 +1,52 @@
+.portfolio-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.table-wrap {
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.85rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th button {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+td small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ink-soft);
+}
+
+tbody tr {
+  cursor: pointer;
+}
+
+tbody tr.selected {
+  background: rgba(0, 47, 83, 0.05);
+}
+
+@media (max-width: 1180px) {
+  .portfolio-top-grid {
+    grid-template-columns: 1fr;
+  }
+}

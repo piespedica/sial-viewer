@@ -1,0 +1,107 @@
+<section class="tab-layout">
+  <div class="section-heading">
+    <div>
+      <p class="panel-label">Scostamento economico</p>
+      <h2>Actual vs C12</h2>
+    </div>
+    <p>Leggi il portafoglio per differenza rispetto al piano, non solo per margine assoluto.</p>
+  </div>
+
+  <div class="content-grid">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Over plan</p>
+          <h2>Migliori delta vs C12</h2>
+        </div>
+      </div>
+      <div class="ranking-list">
+        @for (item of facade.bestDeltaVsPlan(); track item.record.codComm) {
+          <button type="button" class="ranking-item" (click)="recordOpen.emit(item.record)" (contextmenu)="pinRecord($event, item.record)">
+            <div class="ranking-copy">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.record.descriz }}</span>
+              <span>MarTotComm {{ formatMoney(item.record.totalMargin) }} · C12 {{ formatMoney(item.record.plannedMargin) }}</span>
+            </div>
+            <div class="ranking-bar">
+              <span class="fill positive" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.bestDeltaVsPlan()))"></span>
+            </div>
+            <strong>{{ formatMoney(item.value) }}</strong>
+          </button>
+        }
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Under plan</p>
+          <h2>Peggiori delta vs C12</h2>
+        </div>
+      </div>
+      <div class="ranking-list">
+        @for (item of facade.worstDeltaVsPlan(); track item.record.codComm) {
+          <button type="button" class="ranking-item" (click)="recordOpen.emit(item.record)" (contextmenu)="pinRecord($event, item.record)">
+            <div class="ranking-copy">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.record.descriz }}</span>
+              <span>MarTotComm {{ formatMoney(item.record.totalMargin) }} · C12 {{ formatMoney(item.record.plannedMargin) }}</span>
+            </div>
+            <div class="ranking-bar">
+              <span class="fill negative" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.worstDeltaVsPlan()))"></span>
+            </div>
+            <strong>{{ formatMoney(item.value) }}</strong>
+          </button>
+        }
+      </div>
+    </article>
+  </div>
+
+  <div class="content-grid">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Efficienza</p>
+          <h2>Miglior margine %</h2>
+        </div>
+      </div>
+      <div class="ranking-list">
+        @for (item of facade.bestMarginPct(); track item.record.codComm) {
+          <button type="button" class="ranking-item" (click)="recordOpen.emit(item.record)" (contextmenu)="pinRecord($event, item.record)">
+            <div class="ranking-copy">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.sublabel }}</span>
+            </div>
+            <div class="ranking-bar">
+              <span class="fill positive" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.bestMarginPct()))"></span>
+            </div>
+            <strong>{{ formatPercent(item.value) }}</strong>
+          </button>
+        }
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Rischio</p>
+          <h2>Peggior margine %</h2>
+        </div>
+      </div>
+      <div class="ranking-list">
+        @for (item of facade.worstMarginPct(); track item.record.codComm) {
+          <button type="button" class="ranking-item" (click)="recordOpen.emit(item.record)" (contextmenu)="pinRecord($event, item.record)">
+            <div class="ranking-copy">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.sublabel }}</span>
+            </div>
+            <div class="ranking-bar">
+              <span class="fill negative" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.worstMarginPct()))"></span>
+            </div>
+            <strong>{{ formatPercent(item.value) }}</strong>
+          </button>
+        }
+      </div>
+    </article>
+  </div>
+</section>

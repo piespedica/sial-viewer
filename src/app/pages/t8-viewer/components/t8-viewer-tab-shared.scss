@@ -1,0 +1,165 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.tab-layout {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.panel {
+  padding: 1rem 1.1rem;
+  min-width: 0;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.panel--full {
+  width: 100%;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.panel-header p:last-child {
+  max-width: 28ch;
+  color: var(--ink-soft);
+}
+
+.panel-label {
+  margin: 0 0 0.75rem;
+  color: var(--eng-red);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.content-grid--wide-right {
+  grid-template-columns: 1.1fr 0.9fr;
+}
+
+.ranking-list,
+.breakdown-list,
+.glossary-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ranking-item,
+.breakdown-item {
+  width: 100%;
+  display: grid;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.9rem;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.ranking-item {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  text-align: left;
+}
+
+.ranking-copy,
+.breakdown-copy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.ranking-copy span,
+.breakdown-copy span {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.ranking-bar,
+.breakdown-track {
+  height: 0.72rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 47, 83, 0.08);
+}
+
+.fill,
+.breakdown-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.fill.positive,
+.breakdown-fill {
+  background: linear-gradient(90deg, var(--eng-blue), var(--digital-finance));
+}
+
+.fill.negative {
+  background: linear-gradient(90deg, var(--eng-red), var(--media-communication));
+}
+
+.breakdown-fill.accent {
+  background: linear-gradient(90deg, var(--eng-red), var(--augmented-cities));
+}
+
+.breakdown-fill.neutral {
+  background: linear-gradient(90deg, var(--eng-blue), var(--smart-government));
+}
+
+.detail-grid,
+.detail-metrics {
+  display: grid;
+  gap: 1rem;
+}
+
+.detail-grid span,
+.detail-metrics span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.negative {
+  color: var(--negative);
+}
+
+h2,
+p {
+  margin: 0;
+}
+
+@media (max-width: 1180px) {
+  .content-grid,
+  .content-grid--wide-right,
+  .detail-grid,
+  .detail-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .panel-header,
+  .ranking-item,
+  .breakdown-item {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

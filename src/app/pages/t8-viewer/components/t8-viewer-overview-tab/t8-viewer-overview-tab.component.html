@@ -1,0 +1,121 @@
+<section class="tab-layout">
+  <div class="insight-strip">
+    @for (item of facade.insights(); track item.title) {
+      <article class="insight-card" [class.positive]="item.tone === 'positive'" [class.warning]="item.tone === 'warning'" [class.negative]="item.tone === 'negative'">
+        <strong>{{ item.title }}</strong>
+        <p>{{ item.body }}</p>
+      </article>
+    }
+  </div>
+
+  <div class="kpi-grid kpi-grid--primary">
+    @for (card of facade.overviewPrimaryKpis(); track card.id) {
+      <article class="kpi-card" [class.negative]="card.tone === 'negative'" [class.positive]="card.tone === 'positive'" [class.warning]="card.tone === 'warning'">
+        <div class="kpi-header">
+          <span>{{ card.shortLabel }}</span>
+          <button
+            type="button"
+            class="info-dot"
+            (mouseenter)="showTooltip(card.id)"
+            (mouseleave)="hideTooltip(card.id)"
+            (focus)="showTooltip(card.id)"
+            (blur)="hideTooltip(card.id)"
+            (click)="toggleTooltip(card.id)"
+          >
+            ?
+          </button>
+          @if (openTooltipId() === card.id) {
+            <div class="tooltip-panel">
+              <strong>{{ card.label }}</strong>
+              <p>{{ card.definition }}</p>
+              <p><strong>Formula:</strong> {{ card.formula }}</p>
+            </div>
+          }
+        </div>
+        <strong>{{ formatKpiValue(card) }}</strong>
+        <small>{{ card.description }}</small>
+      </article>
+    }
+  </div>
+
+  <div class="kpi-grid kpi-grid--secondary">
+    @for (card of facade.overviewSecondaryKpis(); track card.id) {
+      <article class="kpi-card kpi-card--secondary" [class.negative]="card.tone === 'negative'" [class.positive]="card.tone === 'positive'" [class.warning]="card.tone === 'warning'">
+        <div class="kpi-header">
+          <span>{{ card.shortLabel }}</span>
+          <button
+            type="button"
+            class="info-dot"
+            (mouseenter)="showTooltip(card.id)"
+            (mouseleave)="hideTooltip(card.id)"
+            (focus)="showTooltip(card.id)"
+            (blur)="hideTooltip(card.id)"
+            (click)="toggleTooltip(card.id)"
+          >
+            ?
+          </button>
+          @if (openTooltipId() === card.id) {
+            <div class="tooltip-panel">
+              <strong>{{ card.label }}</strong>
+              <p>{{ card.definition }}</p>
+              <p><strong>Formula:</strong> {{ card.formula }}</p>
+            </div>
+          }
+        </div>
+        <strong>{{ formatKpiValue(card) }}</strong>
+      </article>
+    }
+  </div>
+
+  <div class="content-grid">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Performance snapshot</p>
+          <h2>Best performer per margine</h2>
+        </div>
+      </div>
+      <div class="ranking-list">
+        @for (item of facade.bestPerformers(); track item.record.codComm) {
+          <button type="button" class="ranking-item" (click)="recordOpen.emit(item.record)" (contextmenu)="pinRecord($event, item.record)">
+            <div class="ranking-copy">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.record.descriz }}</span>
+              <span>C12 {{ formatMoney(item.record.plannedMargin) }} · Delta {{ formatMoney(item.record.marginDeltaVsPlan) }}</span>
+            </div>
+            <div class="ranking-bar">
+              <span class="fill positive" [style.width]="formatBarWidth(item.value, maxAbsoluteValue(facade.bestPerformers()))"></span>
+            </div>
+            <strong>{{ formatMoney(item.value) }}</strong>
+          </button>
+        }
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Operational focus</p>
+          <h2>Commesse da proteggere</h2>
+        </div>
+      </div>
+      <div class="ranking-list">
+        @for (record of facade.filteredRecords().slice(0, 8); track record.codComm) {
+          @if (facade.isAtRisk(record)) {
+            <button type="button" class="ranking-item" (click)="recordOpen.emit(record)" (contextmenu)="pinRecord($event, record)">
+              <div class="ranking-copy">
+                <strong>{{ record.codComm }}</strong>
+                <span>{{ record.descriz }}</span>
+                <span>Backlog {{ formatMoney(record.backlogCurrentYear) }} · Fine {{ formatDate(record.projectEndDate) }}</span>
+              </div>
+              <div class="ranking-bar">
+                <span class="fill negative" [style.width]="formatBarWidth(record.backlogCurrentYear, facade.kpis().atRiskBacklog)"></span>
+              </div>
+              <strong>{{ formatMoney(record.marginDeltaVsPlan) }}</strong>
+            </button>
+          }
+        }
+      </div>
+    </article>
+  </div>
+</section>

@@ -3,6 +3,7 @@ export type PortfolioScope = 'commerciale' | 'tutte';
 export type ClosureFilter = 'tutte' | 'aperte' | 'chiuse';
 export type SortDirection = 'asc' | 'desc';
 export type ViewerTab = 'overview' | 'performance' | 'portfolio' | 'glossary';
+export type SessionDialogMode = 'restore-choice' | 'restore-picker' | 'save-session';
 export type KpiFormat = 'currency' | 'percent' | 'count';
 export type KpiTone = 'default' | 'positive' | 'negative' | 'warning';
 export type SortKey =

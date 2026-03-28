@@ -1,0 +1,18 @@
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+}
+
+.section-heading p:last-child {
+  max-width: 54ch;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 900px) {
+  .section-heading {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

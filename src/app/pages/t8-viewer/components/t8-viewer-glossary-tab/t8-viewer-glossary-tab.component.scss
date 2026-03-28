@@ -1,0 +1,26 @@
+.glossary-card {
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.glossary-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.glossary-head span {
+  color: var(--eng-blue);
+  font-weight: 700;
+}
+
+.glossary-card p + p {
+  margin-top: 0.45rem;
+}
+
+.empty-detail {
+  color: var(--ink-soft);
+}

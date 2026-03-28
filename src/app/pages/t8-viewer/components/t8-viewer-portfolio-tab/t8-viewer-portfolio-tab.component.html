@@ -1,0 +1,115 @@
+<section class="tab-layout">
+  <div class="portfolio-top-grid">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Mix portafoglio</p>
+          <h2>Business Unit</h2>
+        </div>
+      </div>
+      <div class="breakdown-list">
+        @for (item of facade.businessUnitBreakdown(); track item.label) {
+          <div class="breakdown-item">
+            <div class="breakdown-copy">
+              <strong>{{ item.label || 'Non valorizzata' }}</strong>
+              <span>{{ item.count }} commesse · margine {{ formatCompactMoney(item.margin) }}</span>
+            </div>
+            <div class="breakdown-track">
+              <span class="breakdown-fill" [style.width]="formatBarWidth(item.revenue, maxRevenue(facade.businessUnitBreakdown()))"></span>
+            </div>
+            <strong>{{ formatCompactMoney(item.revenue) }}</strong>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Mix portafoglio</p>
+          <h2>Linea prodotto</h2>
+        </div>
+      </div>
+      <div class="breakdown-list">
+        @for (item of facade.lineaProdBreakdown(); track item.label) {
+          <div class="breakdown-item">
+            <div class="breakdown-copy">
+              <strong>{{ item.label || 'Non valorizzata' }}</strong>
+              <span>{{ item.count }} commesse · margine {{ formatCompactMoney(item.margin) }}</span>
+            </div>
+            <div class="breakdown-track">
+              <span class="breakdown-fill accent" [style.width]="formatBarWidth(item.revenue, maxRevenue(facade.lineaProdBreakdown()))"></span>
+            </div>
+            <strong>{{ formatCompactMoney(item.revenue) }}</strong>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-label">Contesto economico</p>
+          <h2>CodCDC</h2>
+        </div>
+      </div>
+      <div class="breakdown-list">
+        @for (item of facade.codCDCBreakdown(); track item.label) {
+          <div class="breakdown-item">
+            <div class="breakdown-copy">
+              <strong>{{ item.label || 'Non valorizzato' }}</strong>
+              <span>{{ item.count }} commesse · margine {{ formatCompactMoney(item.margin) }}</span>
+            </div>
+            <div class="breakdown-track">
+              <span class="breakdown-fill neutral" [style.width]="formatBarWidth(item.revenue, maxRevenue(facade.codCDCBreakdown()))"></span>
+            </div>
+            <strong>{{ formatCompactMoney(item.revenue) }}</strong>
+          </div>
+        }
+      </div>
+    </article>
+  </div>
+
+  <article class="panel panel--full">
+    <div class="panel-header">
+      <div>
+        <p class="panel-label">Explorer</p>
+        <h2>Tabella commesse</h2>
+      </div>
+      <p>Ordina e seleziona una riga per leggere il dettaglio senza comprimere la vista tabellare.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><button type="button" (click)="facade.toggleSort('codComm')">Commessa {{ sortIndicator('codComm') }}</button></th>
+            <th><button type="button" (click)="facade.toggleSort('cliente')">Cliente {{ sortIndicator('cliente') }}</button></th>
+            <th><button type="button" (click)="facade.toggleSort('businessUnit')">BU {{ sortIndicator('businessUnit') }}</button></th>
+            <th><button type="button" (click)="facade.toggleSort('plannedMargin')">C12 {{ sortIndicator('plannedMargin') }}</button></th>
+            <th><button type="button" (click)="facade.toggleSort('marginToDate')">Margine {{ sortIndicator('marginToDate') }}</button></th>
+            <th><button type="button" (click)="facade.toggleSort('marginDeltaVsPlan')">Delta {{ sortIndicator('marginDeltaVsPlan') }}</button></th>
+            <th><button type="button" (click)="facade.toggleSort('monthlyMargin')">Margine mese {{ sortIndicator('monthlyMargin') }}</button></th>
+            <th><button type="button" (click)="facade.toggleSort('backlogCurrentYear')">Backlog {{ sortIndicator('backlogCurrentYear') }}</button></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (record of facade.filteredRecords(); track record.codComm) {
+            <tr (click)="recordOpen.emit(record)" (contextmenu)="pinRecord($event, record)" [class.selected]="detailRecord()?.codComm === record.codComm">
+              <td>
+                <strong>{{ record.codComm }}</strong>
+                <small>{{ record.descriz }}</small>
+              </td>
+              <td>{{ record.cliente }}</td>
+              <td>{{ record.businessUnit || '-' }}</td>
+              <td>{{ formatMoney(record.plannedMargin) }}</td>
+              <td [class.negative]="record.marginToDate < 0">{{ formatMoney(record.marginToDate) }}</td>
+              <td [class.negative]="record.marginDeltaVsPlan < 0">{{ formatMoney(record.marginDeltaVsPlan) }}</td>
+              <td [class.negative]="record.monthlyMargin < 0">{{ formatMoney(record.monthlyMargin) }}</td>
+              <td>{{ formatMoney(record.backlogCurrentYear) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
