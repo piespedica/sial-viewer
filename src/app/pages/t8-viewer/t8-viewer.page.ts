@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RankingEntry, SegmentBreakdown, T8JobRecord } from '../../models/t8-report.model';
+import { KpiCard, RankingEntry, SegmentBreakdown, T8JobRecord, ViewerTab } from '../../models/t8-report.model';
 import { T8ViewerFacade } from '../../services/t8-viewer.facade';
 
 @Component({
@@ -28,6 +28,9 @@ export class T8ViewerPageComponent {
 
   readonly facade = inject(T8ViewerFacade);
   readonly isDragging = signal(false);
+  readonly openTooltipId = signal<string | null>(null);
+  readonly isDetailModalOpen = signal(false);
+  readonly modalRecord = signal<T8JobRecord | null>(null);
   readonly detailRecord = computed(() => this.facade.selectedRecord() ?? this.facade.selectedRecordFallback());
 
   @ViewChild('fileInput') private readonly fileInput?: ElementRef<HTMLInputElement>;
@@ -39,6 +42,7 @@ export class T8ViewerPageComponent {
       return;
     }
 
+    this.closeDetailModal();
     void this.facade.loadFile(file);
     input.value = '';
   }
@@ -51,6 +55,7 @@ export class T8ViewerPageComponent {
       return;
     }
 
+    this.closeDetailModal();
     void this.facade.loadFile(file);
   }
 
@@ -94,6 +99,22 @@ export class T8ViewerPageComponent {
     }).format(value);
   }
 
+  formatKpiValue(card: KpiCard): string {
+    if (card.value === null || card.value === undefined) {
+      return 'N.D.';
+    }
+
+    if (card.format === 'currency') {
+      return this.formatCompactMoney(card.value);
+    }
+
+    if (card.format === 'percent') {
+      return this.formatPercent(card.value);
+    }
+
+    return Math.round(card.value).toString();
+  }
+
   formatBarWidth(value: number, max: number): string {
     if (max <= 0) {
       return '0%';
@@ -119,7 +140,43 @@ export class T8ViewerPageComponent {
     return filters.sortDirection === 'desc' ? 'v' : '^';
   }
 
-  selectRecord(record: T8JobRecord): void {
+  setTab(tab: ViewerTab): void {
+    this.facade.setActiveTab(tab);
+  }
+
+  showTooltip(id: string): void {
+    this.openTooltipId.set(id);
+  }
+
+  hideTooltip(id: string): void {
+    if (this.openTooltipId() === id) {
+      this.openTooltipId.set(null);
+    }
+  }
+
+  toggleTooltip(id: string): void {
+    this.openTooltipId.set(this.openTooltipId() === id ? null : id);
+  }
+
+  openRecordModal(record: T8JobRecord): void {
+    this.modalRecord.set(record);
+    this.isDetailModalOpen.set(true);
+  }
+
+  selectDetailRecord(event: MouseEvent, record: T8JobRecord): void {
+    event.preventDefault();
     this.facade.selectRecord(record);
   }
+
+  closeDetailModal(): void {
+    this.isDetailModalOpen.set(false);
+    this.modalRecord.set(null);
+  }
+
+  resetViewer(): void {
+    this.closeDetailModal();
+    this.facade.reset();
+  }
+
+  trackTab = (_: number, item: { id: ViewerTab }) => item.id;
 }

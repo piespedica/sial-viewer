@@ -47,14 +47,23 @@ describe('T8ViewerFacade', () => {
           contractValue: 1000,
           revenueToDate: 800,
           costToDate: 500,
+          monthlyRevenue: 120,
+          monthlyCost: 70,
+          monthlyMargin: 50,
+          plannedMargin: 250,
           marginToDate: 300,
+          totalMargin: 340,
+          marginDeltaVsPlan: 90,
           marginPctToDate: 37.5,
           backlogCurrentYear: 200,
           backlogFutureYears: 0,
           residualCostCurrentYear: 80,
           residualCostFutureYears: 0,
+          plannedResidualCostCurrentYear: 60,
           progressPct: 80,
           costNetToDate: 100,
+          underPlan: false,
+          daysToProjectEnd: 45,
           isCommercial: true,
           raw: {},
         },
@@ -84,14 +93,23 @@ describe('T8ViewerFacade', () => {
           contractValue: 0,
           revenueToDate: 0,
           costToDate: 600,
+          monthlyRevenue: 0,
+          monthlyCost: 25,
+          monthlyMargin: -25,
+          plannedMargin: -500,
           marginToDate: -600,
+          totalMargin: -550,
+          marginDeltaVsPlan: -50,
           marginPctToDate: null,
           backlogCurrentYear: 0,
           backlogFutureYears: 0,
           residualCostCurrentYear: 300,
           residualCostFutureYears: 0,
+          plannedResidualCostCurrentYear: 250,
           progressPct: null,
           costNetToDate: 0,
+          underPlan: true,
+          daysToProjectEnd: null,
           isCommercial: false,
           raw: {},
         },
@@ -103,9 +121,13 @@ describe('T8ViewerFacade', () => {
     expect(facade.filteredRecords().length).toBe(1);
     expect(facade.kpis().revenueToDate).toBe(800);
     expect(facade.kpis().marginToDate).toBe(300);
+    expect(facade.kpis().marginDeltaVsPlan).toBe(90);
+    expect(facade.kpis().underPlanRate).toBe(0);
 
     facade.setScope('tutte');
     expect(facade.filteredRecords().length).toBe(2);
     expect(facade.kpis().marginToDate).toBe(-300);
+    expect(facade.kpis().marginDeltaVsPlan).toBe(40);
+    expect(facade.kpis().underPlanRate).toBe(50);
   });
 });

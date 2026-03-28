@@ -1,21 +1,37 @@
 :root {
   color-scheme: light;
-  --app-bg: #f4efe6;
-  --surface: rgba(255, 252, 246, 0.78);
-  --surface-strong: #fffaf2;
-  --surface-dark: #132127;
-  --ink: #192126;
-  --ink-soft: #52626c;
-  --ink-muted: #70818a;
-  --line: rgba(25, 33, 38, 0.12);
-  --accent: #c7663b;
-  --accent-strong: #a94d26;
-  --accent-soft: rgba(199, 102, 59, 0.12);
-  --positive: #20694f;
-  --negative: #a1342d;
-  --warning: #a96f12;
-  --shadow-lg: 0 24px 60px rgba(19, 33, 39, 0.12);
-  --shadow-md: 0 16px 36px rgba(19, 33, 39, 0.08);
+  --eng-red: #c5004b;
+  --eng-blue: #002f53;
+  --eng-black: #000000;
+  --eng-grey: #f3f4f6;
+  --eng-white: #ffffff;
+  --media-communication: #dc4165;
+  --smart-transportation: #035d67;
+  --smart-retail-fashion: #b87ecf;
+  --augmented-cities: #fe7311;
+  --digital-finance: #4aacc5;
+  --smart-energy-utilities: #facd13;
+  --e-health: #00b0ab;
+  --smart-agriculture: #74d857;
+  --smart-government: #3f4fa2;
+  --digital-defense: #739a50;
+  --digital-industry: #8192db;
+  --app-bg: #f3f4f6;
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-strong: #ffffff;
+  --surface-dark: #002f53;
+  --ink: #000000;
+  --ink-soft: #23435c;
+  --ink-muted: #5f7486;
+  --line: rgba(0, 47, 83, 0.12);
+  --accent: #c5004b;
+  --accent-strong: #a4003f;
+  --accent-soft: rgba(197, 0, 75, 0.08);
+  --positive: #035d67;
+  --negative: #c5004b;
+  --warning: #fe7311;
+  --shadow-lg: 0 24px 60px rgba(0, 47, 83, 0.12);
+  --shadow-md: 0 16px 36px rgba(0, 47, 83, 0.08);
 }
 
 * {
@@ -34,8 +50,8 @@ body {
     'Segoe UI',
     sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(199, 102, 59, 0.16), transparent 38%),
-    radial-gradient(circle at bottom right, rgba(32, 105, 79, 0.12), transparent 32%),
+    radial-gradient(circle at top left, rgba(197, 0, 75, 0.14), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(0, 47, 83, 0.1), transparent 38%),
     var(--app-bg);
   color: var(--ink);
 }

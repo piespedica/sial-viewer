@@ -13,6 +13,6 @@ describe('T8ViewerPageComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Carica il report T8');
+    expect(compiled.textContent).toContain('Let’s make the numbers real.');
   });
 });

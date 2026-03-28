@@ -20,10 +20,17 @@ const REQUIRED_HEADERS = [
   'Chiusa',
   'RicTotComm',
   'RicTotData',
+  'RicMatNelMese',
+  '%AvanRicTotData',
   'CostTotData',
+  'CostMatNelMese',
+  'MarDatiC12',
+  'MarTotComm',
   'MarTotData',
+  'MarMatNelMese',
   '%MarTotData',
   'RicResAnnoCorr',
+  'Costi Res. Anno corrente (Da Piano)',
   'CostResAnnoCorr',
   'Business Unit',
   'Account Manager',
@@ -395,8 +402,15 @@ export class T8XlsParserService {
     const accountManagerLabel = [accountManager, accountManagerSurname, accountManagerName].filter(Boolean).join(' - ');
     const isCommercial = this.deriveScope(row) === 'commerciale';
     const revenueToDate = this.asNumber(row['RicTotData']);
+    const monthlyRevenue = this.asNumber(row['RicMatNelMese']);
+    const monthlyCost = this.asNumber(row['CostMatNelMese']);
+    const monthlyMargin = this.asNumber(row['MarMatNelMese']);
+    const plannedMargin = this.asNumber(row['MarDatiC12']);
     const marginToDate = this.asNumber(row['MarTotData']);
+    const totalMargin = this.asNumber(row['MarTotComm']);
     const marginPct = this.asNullableNumber(row['%MarTotData']) ?? (revenueToDate ? (marginToDate / revenueToDate) * 100 : null);
+    const projectEndDate = this.parseItalianDateValue(row['Data Fine Progetto']);
+    const marginDeltaVsPlan = totalMargin - plannedMargin;
 
     return {
       rowNumber,
@@ -418,20 +432,29 @@ export class T8XlsParserService {
       segment: this.asString(row['Segment']),
       tipCliente: this.asString(row['Tip.Cliente']),
       tipoProcesso: this.asString(row['Tipo Processo']),
-      projectEndDate: this.parseItalianDateValue(row['Data Fine Progetto']),
+      projectEndDate,
       dataApertura: this.parseItalianDateValue(row['DATA APERTURA']),
       dataChiusura: this.parseItalianDateValue(row['DATA CHIUSURA']),
       contractValue: this.asNumber(row['RicTotComm']),
       revenueToDate,
       costToDate: this.asNumber(row['CostTotData']),
+      monthlyRevenue,
+      monthlyCost,
+      monthlyMargin,
+      plannedMargin,
       marginToDate,
+      totalMargin,
+      marginDeltaVsPlan,
       marginPctToDate: marginPct,
       backlogCurrentYear: this.asNumber(row['RicResAnnoCorr']),
       backlogFutureYears: this.asNumber(row['RicResAnniFut']),
       residualCostCurrentYear: this.asNumber(row['CostResAnnoCorr']),
       residualCostFutureYears: this.asNumber(row['CostResAnniFut']),
+      plannedResidualCostCurrentYear: this.asNumber(row['Costi Res. Anno corrente (Da Piano)']),
       progressPct: this.asNullableNumber(row['%AvanRicTotData']),
       costNetToDate: this.asNumber(row['CostNetAllaData']),
+      underPlan: marginDeltaVsPlan < 0,
+      daysToProjectEnd: projectEndDate ? Math.ceil((projectEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null,
       isCommercial,
       raw: row,
     };
