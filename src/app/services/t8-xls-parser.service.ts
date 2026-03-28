@@ -38,6 +38,23 @@ const REQUIRED_HEADERS = [
   'Data Fine Progetto',
 ];
 
+const HEADER_ALIASES: Record<string, string> = {
+  businessunit: 'Business Unit',
+  accountmanager: 'Account Manager',
+  projectmanager: 'Project Manager',
+  datafineprogetto: 'Data Fine Progetto',
+  datainizioprogetto: 'Data Fine Progetto',
+  tipoavanzamento: 'TipoAvanz',
+  tiporicavo: 'TipoRic',
+  ricmatmese: 'RicMatNelMese',
+  marmatmese: 'MarMatNelMese',
+  costmatmese: 'CostMatNelMese',
+  ricaviresannocorr: 'RicResAnnoCorr',
+  costiresannocorrdapiano: 'Costi Res. Anno corrente (Da Piano)',
+};
+
+const SHARED_SUPPORT_CUSTOMERS = ['ENGINEERING INGEGNERIA INFORMATICA SPA', 'CYBERTECH SRL'];
+
 const WINDOWS_1252 = new TextDecoder('windows-1252');
 const UTF16LE = new TextDecoder('utf-16le');
 
@@ -47,6 +64,10 @@ const UTF16LE = new TextDecoder('utf-16le');
 export class T8XlsParserService {
   async parseFile(file: File): Promise<T8DashboardDataset> {
     const buffer = await file.arrayBuffer();
+    if (file.name.toLowerCase().endsWith('.xlsx')) {
+      return this.parseXlsxBuffer(buffer);
+    }
+
     return this.parseBuffer(buffer);
   }
 
@@ -63,6 +84,40 @@ export class T8XlsParserService {
     const headerEntries = this.extractHeaders(sheet.rows);
     const rawRows = this.extractRawRows(sheet.rows, headerEntries);
     const meta = this.extractMeta(sheet.rows, sheets[0].name);
+    const records = rawRows.map((row, index) => this.toJobRecord(row, DATA_ROW_START_INDEX + index));
+
+    return {
+      headers: headerEntries.map(([, header]) => header),
+      meta,
+      records,
+    };
+  }
+
+  async parseXlsxBuffer(buffer: ArrayBuffer): Promise<T8DashboardDataset> {
+    const XLSX = await import('xlsx');
+    const workbook = XLSX.read(buffer, {
+      type: 'array',
+      cellDates: false,
+      raw: false,
+    });
+
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) {
+      throw new Error('Il file non contiene fogli di lavoro leggibili.');
+    }
+
+    const sheet = workbook.Sheets[firstSheetName];
+    const matrix = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: null,
+      raw: false,
+      blankrows: false,
+    }) as CellValue[][];
+
+    const rows = this.matrixToRows(matrix);
+    const headerEntries = this.extractHeaders(rows);
+    const rawRows = this.extractRawRows(rows, headerEntries);
+    const meta = this.extractMeta(rows, firstSheetName);
     const records = rawRows.map((row, index) => this.toJobRecord(row, DATA_ROW_START_INDEX + index));
 
     return {
@@ -118,7 +173,8 @@ export class T8XlsParserService {
   deriveScope(rawRow: RawRow): PortfolioScope {
     const cliente = this.asString(rawRow['Cliente']).toUpperCase();
     const lineaProd = this.asString(rawRow['LineaProd']).toUpperCase();
-    return cliente.includes('ENGINEERING INGEGNERIA INFORMATICA SPA') || lineaProd === 'F10'
+    const isSharedSupportCustomer = SHARED_SUPPORT_CUSTOMERS.some((customer) => cliente.includes(customer));
+    return isSharedSupportCustomer || lineaProd === 'F10'
       ? 'tutte'
       : 'commerciale';
   }
@@ -328,7 +384,7 @@ export class T8XlsParserService {
     }
 
     const headerEntries = Object.entries(headerRow)
-      .map(([column, value]) => [Number(column), this.asString(value)] as [number, string])
+      .map(([column, value]) => [Number(column), this.canonicalizeHeader(this.asString(value))] as [number, string])
       .sort((left, right) => left[0] - right[0])
       .filter(([, header]) => header.length > 0);
 
@@ -493,7 +549,7 @@ export class T8XlsParserService {
     }
 
     if (typeof value === 'string') {
-      const normalized = value.replace(/\./g, '').replace(',', '.').trim();
+      const normalized = this.normalizeNumericString(value);
       if (!normalized || normalized.toUpperCase() === 'N.D.') {
         return null;
       }
@@ -503,6 +559,60 @@ export class T8XlsParserService {
     }
 
     return null;
+  }
+
+  private matrixToRows(matrix: CellValue[][]): Map<number, Record<number, CellValue>> {
+    const rows = new Map<number, Record<number, CellValue>>();
+
+    for (const [rowIndex, values] of matrix.entries()) {
+      const row = this.ensureRow(rows, rowIndex);
+      values.forEach((value, columnIndex) => {
+        row[columnIndex] = value;
+      });
+    }
+
+    return rows;
+  }
+
+  private canonicalizeHeader(header: string): string {
+    if (!header) {
+      return '';
+    }
+
+    const normalized = this.normalizeHeader(header);
+    return HEADER_ALIASES[normalized] ?? header.trim();
+  }
+
+  private normalizeHeader(value: string): string {
+    return value
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/['’.():/%-]/g, '')
+      .replace(/\s+/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private normalizeNumericString(value: string): string {
+    const trimmed = value.replace(/\s/g, '').trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    const hasComma = trimmed.includes(',');
+    const hasDot = trimmed.includes('.');
+
+    if (hasComma && hasDot) {
+      const lastComma = trimmed.lastIndexOf(',');
+      const lastDot = trimmed.lastIndexOf('.');
+      return lastComma > lastDot ? trimmed.replace(/\./g, '').replace(',', '.') : trimmed.replace(/,/g, '');
+    }
+
+    if (hasComma) {
+      return /,\d{1,2}$/.test(trimmed) ? trimmed.replace(',', '.') : trimmed.replace(/,/g, '');
+    }
+
+    return trimmed;
   }
 
   private readChain(bytes: Uint8Array, fat: number[], startSector: number, sectorSize: number, maxLength?: number): Uint8Array {
