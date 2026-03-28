@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { KpiCard, RankingEntry, SegmentBreakdown, T8JobRecord, ViewerTab } from '../../models/t8-report.model';
+import { KpiCard, PersistedViewerSession, RankingEntry, SegmentBreakdown, T8JobRecord, ViewerTab } from '../../models/t8-report.model';
 import { T8ViewerFacade } from '../../services/t8-viewer.facade';
+
+type SessionDialogMode = 'restore-choice' | 'restore-picker' | 'save-session' | null;
 
 @Component({
   selector: 'app-t8-viewer-page',
@@ -12,7 +14,7 @@ import { T8ViewerFacade } from '../../services/t8-viewer.facade';
   styleUrl: './t8-viewer.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class T8ViewerPageComponent {
+export class T8ViewerPageComponent implements OnInit {
   private readonly currencyFormatter = new Intl.NumberFormat('it-IT', {
     style: 'currency',
     currency: 'EUR',
@@ -32,8 +34,23 @@ export class T8ViewerPageComponent {
   readonly isDetailModalOpen = signal(false);
   readonly modalRecord = signal<T8JobRecord | null>(null);
   readonly detailRecord = computed(() => this.facade.selectedRecord() ?? this.facade.selectedRecordFallback());
+  readonly sessionDialogMode = signal<SessionDialogMode>(null);
+  readonly savedSessions = signal<PersistedViewerSession[]>([]);
+  readonly selectedSessionId = signal<string | null>(null);
+  readonly pendingSessionName = signal('');
+  readonly sessionDialogError = signal<string | null>(null);
 
   @ViewChild('fileInput') private readonly fileInput?: ElementRef<HTMLInputElement>;
+
+  ngOnInit(): void {
+    this.refreshSavedSessions();
+
+    queueMicrotask(() => {
+      if (this.facade.status() === 'idle') {
+        this.showRestoreSessionsDialog();
+      }
+    });
+  }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -43,7 +60,7 @@ export class T8ViewerPageComponent {
     }
 
     this.closeDetailModal();
-    void this.facade.loadFile(file);
+    void this.handleLoadedFile(file);
     input.value = '';
   }
 
@@ -56,7 +73,7 @@ export class T8ViewerPageComponent {
     }
 
     this.closeDetailModal();
-    void this.facade.loadFile(file);
+    void this.handleLoadedFile(file);
   }
 
   openPicker(): void {
@@ -178,5 +195,107 @@ export class T8ViewerPageComponent {
     this.facade.reset();
   }
 
+  showRestoreSessionsDialog(): void {
+    this.refreshSavedSessions();
+    if (!this.savedSessions().length) {
+      return;
+    }
+
+    this.selectedSessionId.set(null);
+    this.sessionDialogError.set(null);
+    this.sessionDialogMode.set('restore-choice');
+  }
+
   trackTab = (_: number, item: { id: ViewerTab }) => item.id;
+
+  private async handleLoadedFile(file: File): Promise<void> {
+    await this.facade.loadFile(file);
+
+    if (this.facade.status() !== 'ready') {
+      return;
+    }
+
+    this.openSaveSessionDialog(file.name);
+  }
+
+  private defaultSessionName(fileName: string): string {
+    const timestamp = new Intl.DateTimeFormat('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date());
+
+    return `${fileName} - ${timestamp}`;
+  }
+
+  openRestorePickerDialog(): void {
+    const sessions = this.savedSessions();
+    this.sessionDialogError.set(null);
+    this.selectedSessionId.set(sessions[0]?.id ?? null);
+    this.sessionDialogMode.set('restore-picker');
+  }
+
+  keepWorkingWithNewFile(): void {
+    this.closeSessionDialog();
+  }
+
+  restoreSelectedSession(): void {
+    const sessionId = this.selectedSessionId();
+    if (!sessionId) {
+      this.sessionDialogError.set('Seleziona una sessione da ripristinare.');
+      return;
+    }
+
+    this.closeDetailModal();
+    const restored = this.facade.restoreSavedSession(sessionId);
+    if (!restored) {
+      this.sessionDialogError.set('La sessione selezionata non e piu disponibile.');
+      this.refreshSavedSessions();
+      return;
+    }
+
+    this.closeSessionDialog();
+  }
+
+  openSaveSessionDialog(fileName: string): void {
+    this.pendingSessionName.set(this.defaultSessionName(fileName));
+    this.sessionDialogError.set(null);
+    this.sessionDialogMode.set('save-session');
+  }
+
+  saveSessionFromDialog(): void {
+    const normalizedName = this.pendingSessionName().trim();
+    if (!normalizedName) {
+      this.sessionDialogError.set('Il nome della sessione non puo essere vuoto.');
+      return;
+    }
+
+    try {
+      this.facade.saveCurrentSession(normalizedName);
+      this.refreshSavedSessions();
+      this.closeSessionDialog();
+    } catch (error) {
+      this.sessionDialogError.set(
+        error instanceof Error ? error.message : 'Non sono riuscito a salvare la sessione nel browser.',
+      );
+    }
+  }
+
+  closeSessionDialog(): void {
+    this.sessionDialogMode.set(null);
+    this.sessionDialogError.set(null);
+  }
+
+  formatSavedAt(value: string): string {
+    return new Intl.DateTimeFormat('it-IT', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(value));
+  }
+
+  private refreshSavedSessions(): void {
+    this.savedSessions.set(this.facade.listSavedSessions());
+  }
 }

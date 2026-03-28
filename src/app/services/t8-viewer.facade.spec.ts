@@ -4,14 +4,14 @@ import { T8ViewerFacade } from './t8-viewer.facade';
 
 describe('T8ViewerFacade', () => {
   let facade: T8ViewerFacade;
+  let dataset: T8DashboardDataset;
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({});
     facade = TestBed.inject(T8ViewerFacade);
-  });
 
-  it('aggregates KPIs on the commercial default scope', () => {
-    const dataset: T8DashboardDataset = {
+    dataset = {
       headers: [],
       meta: {
         title: 'T8 Aggregato',
@@ -41,8 +41,8 @@ describe('T8ViewerFacade', () => {
           segment: 'DIGITAL EXPERIENCE',
           tipCliente: 'PUB',
           tipoProcesso: 'Sviluppo',
-          projectEndDate: null,
-          dataApertura: null,
+          projectEndDate: new Date(2026, 5, 30),
+          dataApertura: new Date(2026, 0, 15),
           dataChiusura: null,
           contractValue: 1000,
           revenueToDate: 800,
@@ -115,7 +115,9 @@ describe('T8ViewerFacade', () => {
         },
       ],
     };
+  });
 
+  it('aggregates KPIs on the commercial default scope', () => {
     facade.hydrateDataset(dataset, 'sample.xls');
 
     expect(facade.filteredRecords().length).toBe(1);
@@ -129,5 +131,45 @@ describe('T8ViewerFacade', () => {
     expect(facade.kpis().marginToDate).toBe(-300);
     expect(facade.kpis().marginDeltaVsPlan).toBe(40);
     expect(facade.kpis().underPlanRate).toBe(50);
+  });
+
+  it('saves and restores a browser session with filters and date fields', () => {
+    facade.hydrateDataset(dataset, 'sample.xls');
+    facade.setScope('tutte');
+    facade.setSearch('Cliente Esterno');
+    facade.selectRecord(dataset.records[0]);
+
+    facade.saveCurrentSession('Sessione demo');
+    facade.reset();
+
+    expect(facade.status()).toBe('idle');
+    const savedSessions = facade.listSavedSessions();
+    expect(savedSessions.length).toBe(1);
+    expect(savedSessions[0].name).toBe('Sessione demo');
+    expect(facade.restoreSavedSession(savedSessions[0].id)).toBe(true);
+    expect(facade.status()).toBe('ready');
+    expect(facade.fileName()).toBe('sample.xls');
+    expect(facade.filters().scope).toBe('tutte');
+    expect(facade.filters().search).toBe('Cliente Esterno');
+    expect(facade.selectedRecord()?.codComm).toBe('A001');
+    expect(facade.meta()?.executedAt instanceof Date).toBe(true);
+    expect(facade.records()[0].projectEndDate instanceof Date).toBe(true);
+  });
+
+  it('keeps at most five saved sessions', () => {
+    for (let index = 1; index <= 6; index += 1) {
+      facade.hydrateDataset(dataset, `sample-${index}.xls`);
+      facade.saveCurrentSession(`Sessione ${index}`);
+    }
+
+    const savedSessions = facade.listSavedSessions();
+    expect(savedSessions.length).toBe(5);
+    expect(savedSessions.map((session) => session.name)).toEqual([
+      'Sessione 6',
+      'Sessione 5',
+      'Sessione 4',
+      'Sessione 3',
+      'Sessione 2',
+    ]);
   });
 });

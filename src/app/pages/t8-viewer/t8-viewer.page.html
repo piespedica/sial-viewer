@@ -70,6 +70,9 @@
       </div>
 
       <div class="masthead-actions">
+        @if (savedSessions().length) {
+          <button type="button" class="secondary-action mr-2" (click)="showRestoreSessionsDialog()">Restore session</button>
+        }
         <button type="button" class="secondary-action" (click)="resetViewer()">Carica un altro file</button>
       </div>
     </header>
@@ -718,5 +721,112 @@
         </section>
       </div>
     }
+
   </section>
+}
+
+@if (sessionDialogMode()) {
+  <div class="detail-modal-backdrop" (click)="closeSessionDialog()">
+    <section class="session-dialog panel" (click)="$event.stopPropagation()">
+      @if (sessionDialogMode() === 'restore-choice') {
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Sessioni salvate</p>
+            <h2>Riprendi una sessione esistente</h2>
+            <p>Ho trovato {{ savedSessions().length }} sessioni nel browser. Puoi ripartire da una sessione salvata oppure caricare un nuovo file.</p>
+          </div>
+        </div>
+
+        <div class="session-summary-list">
+          @for (session of savedSessions(); track session.id) {
+            <article class="session-summary-card">
+              <strong>{{ session.name }}</strong>
+              <span>{{ session.fileName }}</span>
+              <span>Salvata il {{ formatSavedAt(session.savedAt) }}</span>
+            </article>
+          }
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" (click)="keepWorkingWithNewFile()">Carica un nuovo file</button>
+          <button type="button" class="primary-action" (click)="openRestorePickerDialog()">Scegli sessione</button>
+        </div>
+      }
+
+      @if (sessionDialogMode() === 'restore-picker') {
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Ripristino sessione</p>
+            <h2>Seleziona la sessione da aprire</h2>
+            <p>Ripristino di dataset, filtri e selezione commessa salvati nel browser.</p>
+          </div>
+          <button type="button" class="secondary-action detail-close" (click)="closeSessionDialog()">Chiudi</button>
+        </div>
+
+        <div class="session-picker-list">
+          @for (session of savedSessions(); track session.id) {
+            <label class="session-option" [class.active]="selectedSessionId() === session.id">
+              <input
+                type="radio"
+                name="savedSession"
+                [value]="session.id"
+                [ngModel]="selectedSessionId()"
+                (ngModelChange)="selectedSessionId.set($event)"
+              />
+              <div>
+                <strong>{{ session.name }}</strong>
+                <span>{{ session.fileName }}</span>
+                <span>Salvata il {{ formatSavedAt(session.savedAt) }}</span>
+              </div>
+            </label>
+          }
+        </div>
+
+        @if (sessionDialogError()) {
+          <div class="status-card status-card--error">
+            <strong>Operazione non completata</strong>
+            <p>{{ sessionDialogError() }}</p>
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" (click)="keepWorkingWithNewFile()">Nuovo file</button>
+          <button type="button" class="primary-action" (click)="restoreSelectedSession()">Apri sessione</button>
+        </div>
+      }
+
+      @if (sessionDialogMode() === 'save-session') {
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Salvataggio sessione</p>
+            <h2>Salva questa analisi nel browser</h2>
+            <p>Assegna un nome alla sessione. Il browser conserva fino a 5 sessioni e mantiene le piu recenti.</p>
+          </div>
+          <button type="button" class="secondary-action detail-close" (click)="closeSessionDialog()">Non ora</button>
+        </div>
+
+        <label class="session-name-field">
+          <span>Nome sessione</span>
+          <input
+            type="text"
+            [ngModel]="pendingSessionName()"
+            (ngModelChange)="pendingSessionName.set($event); sessionDialogError.set(null)"
+            placeholder="Es. Portafoglio marzo area digital"
+          />
+        </label>
+
+        @if (sessionDialogError()) {
+          <div class="status-card status-card--error">
+            <strong>Operazione non completata</strong>
+            <p>{{ sessionDialogError() }}</p>
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" (click)="closeSessionDialog()">Salta</button>
+          <button type="button" class="primary-action" (click)="saveSessionFromDialog()">Salva sessione</button>
+        </div>
+      }
+    </section>
+  </div>
 }

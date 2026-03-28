@@ -14,8 +14,10 @@ import {
   SortKey,
   T8DashboardDataset,
   T8JobRecord,
+  PersistedViewerSession,
   ViewerTab,
 } from '../models/t8-report.model';
+import { T8SessionStorageService } from './t8-session-storage.service';
 import { T8XlsParserService } from './t8-xls-parser.service';
 
 const DEFAULT_FILTERS: DashboardFilters = {
@@ -161,6 +163,7 @@ const KPI_DEFINITIONS: KpiDefinition[] = [
 })
 export class T8ViewerFacade {
   private readonly parser = inject(T8XlsParserService);
+  private readonly sessionStorage = inject(T8SessionStorageService);
   private readonly datasetSignal = signal<T8DashboardDataset | null>(null);
   private readonly filtersSignal = signal<DashboardFilters>(DEFAULT_FILTERS);
   private readonly selectedCodCommSignal = signal<string | null>(null);
@@ -376,6 +379,53 @@ export class T8ViewerFacade {
     this.statusSignal.set('ready');
     this.errorSignal.set(null);
     this.selectedCodCommSignal.set(null);
+  }
+
+  listSavedSessions(): PersistedViewerSession[] {
+    return this.sessionStorage.listSessions();
+  }
+
+  hasSavedSession(): boolean {
+    return this.sessionStorage.hasSessions();
+  }
+
+  restoreSavedSession(sessionId: string): boolean {
+    const savedSession = this.sessionStorage.loadSession(sessionId);
+    if (!savedSession) {
+      return false;
+    }
+
+    const dataset = this.sessionStorage.restoreDataset(savedSession.dataset);
+    this.datasetSignal.set(dataset);
+    this.fileNameSignal.set(savedSession.fileName);
+    this.filtersSignal.set(savedSession.filters);
+    this.statusSignal.set('ready');
+    this.errorSignal.set(null);
+    this.selectedCodCommSignal.set(savedSession.selectedCodComm);
+    return true;
+  }
+
+  saveCurrentSession(name: string): void {
+    const dataset = this.datasetSignal();
+    if (!dataset) {
+      throw new Error('Nessun dataset disponibile da salvare.');
+    }
+
+    this.sessionStorage.saveSession({
+      name,
+      fileName: this.fileNameSignal(),
+      dataset,
+      filters: this.filtersSignal(),
+      selectedCodComm: this.selectedCodCommSignal(),
+    });
+  }
+
+  clearSavedSession(sessionId: string): void {
+    this.sessionStorage.clearSession(sessionId);
+  }
+
+  clearAllSavedSessions(): void {
+    this.sessionStorage.clearAllSessions();
   }
 
   reset(): void {

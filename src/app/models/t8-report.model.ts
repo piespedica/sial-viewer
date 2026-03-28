@@ -85,6 +85,20 @@ export interface T8DashboardDataset {
   records: T8JobRecord[];
 }
 
+export interface PersistedT8DashboardDataset {
+  headers: string[];
+  meta: Omit<T8ReportMeta, 'executedAt'> & {
+    executedAt: string | null;
+  };
+  records: Array<
+    Omit<T8JobRecord, 'projectEndDate' | 'dataApertura' | 'dataChiusura'> & {
+      projectEndDate: string | null;
+      dataApertura: string | null;
+      dataChiusura: string | null;
+    }
+  >;
+}
+
 export interface DashboardFilters {
   activeTab: ViewerTab;
   scope: PortfolioScope;
@@ -98,6 +112,16 @@ export interface DashboardFilters {
   tipoAvanz: string;
   sortKey: SortKey;
   sortDirection: SortDirection;
+}
+
+export interface PersistedViewerSession {
+  id: string;
+  name: string;
+  fileName: string;
+  dataset: PersistedT8DashboardDataset;
+  filters: DashboardFilters;
+  selectedCodComm: string | null;
+  savedAt: string;
 }
 
 export interface ExecutiveKpis {
